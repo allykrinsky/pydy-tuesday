@@ -1,0 +1,82 @@
+---
+title: "Long Beach Animal Shelter Insights"
+format: dashboard
+jupyter: python3
+---
+
+```{python}
+import pandas as pd
+import plotly.express as px
+import folium
+from folium.plugins import HeatMap
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
+```
+
+
+```{python}
+## Load the dataset
+file_path = "longbeach.csv"
+df = pd.read_csv(file_path)
+```
+
+```{python}
+## Convert dates to datetime format
+df['intake_date'] = pd.to_datetime(df['intake_date'], errors='coerce')
+df['outcome_date'] = pd.to_datetime(df['outcome_date'], errors='coerce')
+```
+
+```{python}
+## Compute length of stay
+df['length_of_stay'] = (df['outcome_date'] - df['intake_date']).dt.days
+```
+
+# Overview
+## --- 1. Intake Trends Over Time ---
+```{python}
+
+df['intake_month'] = df['intake_date']
+intake_trends = df.groupby('intake_month').size().reset_index(name='count')
+fig1 = px.line(intake_trends, x='intake_month', y='count', title='Animal Intakes Over Time')
+fig1.show()
+```
+## --- 2. Outcome Distribution ---
+
+```{python}
+
+outcome_counts = df['outcome_type'].value_counts().reset_index()
+outcome_counts.columns = ['outcome_type', 'count']
+fig2 = px.pie(outcome_counts, names='outcome_type', values='count', title='Distribution of Outcomes')
+fig2.show()
+```
+
+```{python}
+
+df['dob'] = pd.to_datetime(df['dob'], errors='coerce')
+df['age_at_intake'] = (df['intake_date'] - df['dob']).dt.days / 365.25
+fig3 = px.histogram(df, x='age_at_intake', nbins=30, title='Age Distribution of Animals at Intake')
+fig3.show()
+```
+
+# Geospatial Analysis  {orientation="columns" scrolling="true"}
+```{python}
+
+map_center = [df['latitude'].mean(), df['longitude'].mean()]
+m = folium.Map(location=map_center, zoom_start=11)
+heat_data = df[['latitude', 'longitude']].dropna().values.tolist()
+_ = HeatMap(heat_data).add_to(m)
+m
+```
+
+# Animal Names {orientation="columns" scrolling="true"}
+
+```{python}
+animal_names = df['animal_name'].dropna().astype(str).str.lower().str.cat(sep=' ')
+wordcloud = WordCloud(width=800, height=400, background_color='white').generate(animal_names)
+_ = plt.figure(figsize=(10, 5))
+_ = plt.imshow(wordcloud, interpolation='bilinear')
+plt.axis("off")
+_ = plt.title("Word Cloud of Animal Names")
+plt.show()
+```
+
