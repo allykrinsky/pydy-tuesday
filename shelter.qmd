@@ -1,6 +1,8 @@
 ---
 title: "Long Beach Animal Shelter Insights"
 format: dashboard
+execute:
+  allow: [js]
 jupyter: python3
 ---
 
@@ -12,6 +14,8 @@ from folium.plugins import HeatMap
 from wordcloud import WordCloud
 import matplotlib.pyplot as plt
 import plotly.io as pio
+
+
 ```
 
 
@@ -38,16 +42,27 @@ df['length_of_stay'] = (df['outcome_date'] - df['intake_date']).dt.days
 
 df['intake_month'] = df['intake_date']
 intake_trends = df.groupby('intake_month').size().reset_index(name='count')
+
 fig1 = px.line(intake_trends, x='intake_month', y='count', title='Animal Intakes Over Time')
 
 pio.show(fig1)
+
+
 ```
+
+
+
 ## --- 2. Outcome Distribution ---
 
 ```{python}
 
 outcome_counts = df['outcome_type'].value_counts().reset_index()
 outcome_counts.columns = ['outcome_type', 'count']
+
+# Extract data
+labels = outcome_counts['outcome_type']
+sizes = outcome_counts['count']
+
 fig2 = px.pie(outcome_counts, names='outcome_type', values='count', title='Distribution of Outcomes')
 
 pio.show(fig2)
@@ -58,6 +73,7 @@ pio.show(fig2)
 
 df['dob'] = pd.to_datetime(df['dob'], errors='coerce')
 df['age_at_intake'] = (df['intake_date'] - df['dob']).dt.days / 365.25
+
 fig3 = px.histogram(df, x='age_at_intake', nbins=30, title='Age Distribution of Animals at Intake')
 
 pio.show(fig3)
